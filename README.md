@@ -6,7 +6,7 @@
 *Study of farmed oysters and their associated nitrogen cycling in Point Judith Pond, RI.  
 The focus of this repository is analyses of bacterial 16S rRNA amplicon and microbial metatranscriptome data. Additional data and analyses from this study are in other repos TBD.*
 
-This repository contains the scripts, pre-processed sequencing data, and the R script files to reproduce the figures in the manuscript. The raw sequences generated for this study can be found in the NCBI Short Read Archive under BioProject no. PRJNA599137. The corresponding accession numbers for each sample are detailed in [`PRJNA599137_NCBI_16Smetatrans.xlsx`](/PRJNA599137_NCBI_16Smetatrans.xlsx). This file also includes file names and environmental data for each 16S rRNA amplicon or metatranscriptomic sample.
+This repository contains the scripts, processed sequencing data, and the R script files to reproduce the figures in the manuscript. The raw sequences generated for this study can be found in the NCBI Short Read Archive under BioProject no. PRJNA599137. The corresponding accession numbers for each sample are detailed in [`PRJNA599137_NCBI_16Smetatrans.xlsx`](/PRJNA599137_NCBI_16Smetatrans.xlsx). This file also includes file names and general metadata for each 16S rRNA amplicon or metatranscriptomic sample.
 
 ### To cite this work:
 Stevick, R. J. (2019). Oyster-Associated Microbial Community Dynamics (Doctoral dissertation, University of Rhode Island).
@@ -15,5 +15,18 @@ Stevick, R. J. (2019). Oyster-Associated Microbial Community Dynamics (Doctoral 
 
 # Contents
 
+## [EnvironmentalAnalysis](/EnvironmentalAnalysis)
+Envrionmental monitoring data and gas measurements - by Ashley Hamilton
+
+
 ## [16SampliconAnalysis](/16SampliconAnalysis)
-This folder contains scripts used to perform QIIME2 analysis on the 16S rRNA amplicon data.
+QIIME2 analysis of the 16S rRNA amplicon data
+- scripts
+- QIIME2_output
+- figures
+- metadata
+
+## [MetatranscriptomeAnalysis](/MetatranscriptomeAnalysis)
+Functional analysis of the metatranscriptomic data
+- scripts
+-

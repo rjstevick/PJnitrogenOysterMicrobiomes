@@ -1,0 +1,218 @@
+---
+title: "Point Judith environmental data"
+author: "Rebecca Stevick"
+output:
+  html_document:
+    toc: true
+    keep_md: TRUE
+    theme: "cerulean"
+---
+
+## Load libraries
+
+```{r setup, warning=FALSE, message=FALSE}
+
+library(tidyverse)
+library(ggpubr)
+
+knitr::opts_chunk$set(warning=FALSE,message=FALSE)
+
+# set global theme
+theme_set(theme_minimal()+
+             theme(panel.grid.major.y = element_line(color="grey80"), strip.text=element_text(size=16),
+                   strip.background = element_rect(color="transparent"),
+                   strip.text.y = element_text(angle=0), plot.caption = element_text(size=10),
+                   panel.grid.major.x = element_blank(),legend.position="bottom",
+                   plot.background = element_rect(fill="transparent", color="transparent"),
+                   axis.ticks = element_line(inherit.blank = FALSE),
+                   panel.background = element_blank(), 
+                   legend.title = element_text(size=18),
+                   axis.text = element_text(size=15), axis.title = element_text(size=18),
+                   legend.text = element_text(size=16), plot.title = element_text(hjust=0.5)))
+
+```
+
+## Import data
+
+```{r import}
+
+oysterdata <- readxl::read_excel("PointJudith_EnvironmentalSummary_20230703.xlsx",
+                           sheet="GrowthWeightMortality")
+
+incubationdata <- readxl::read_excel("PointJudith_EnvironmentalSummary_20230703.xlsx",
+                           sheet="GasProduction") %>% 
+   filter(Location!="Seawater Control")
+
+DINdataAugust <- readxl::read_excel("PointJudith_EnvironmentalSummary_20230703.xlsx",
+                           sheet="inSituDIN") %>% 
+   filter(Month == "August")
+
+
+NorthernEnvdataAugust <- readxl::read_excel("PointJudith_EnvironmentalSummary_20230703.xlsx",
+                           sheet="rawNorthEnvParam") %>% 
+   add_column("Location" = "Northern") %>% 
+   filter(between(TimeStamp, as.Date("2017-08-01"), as.Date("2017-09-01"))) %>% 
+   select(-c(ODOsat_perc, Chl_ug.L, `BGA-PC_RFU`, `BGA-PC_µg.L`))
+
+SouthernEnvdataAugust <- readxl::read_excel("PointJudith_EnvironmentalSummary_20230703.xlsx",
+                           sheet="rawSouthEnvParam") %>% add_column("Location" = "Southern") %>% 
+   filter(between(TimeStamp, as.Date("2017-08-01"), as.Date("2017-09-01"))) %>% 
+   select(-c(ODOsat_perc, Chl_ug.L, Temp_F, pH)) # pH was uncalibrated at southern site
+
+EnvdataAugust <- full_join(NorthernEnvdataAugust, SouthernEnvdataAugust)
+
+```
+
+------------------------------------------------------------------------
+
+# in Situ environmental parameters
+
+## Plot in situ env param over time
+
+```{r plot}
+
+EnvdataAugust %>% pivot_longer(Temp_C:ODO_mg.L) %>% 
+   ggplot(aes(x=TimeStamp, y=value, color=Location))+
+   facet_grid(name~., scales="free_y")+
+   scale_x_datetime(expand=c(0,0))+
+   geom_line()+
+   scale_color_manual(values=c("cornflowerblue","seagreen3"))
+
+```
+
+## Averages
+
+```{r plot}
+
+EnvdataAugust %>% pivot_longer(Temp_C:ODO_mg.L) %>% 
+   ggplot(aes(x=Location, y=value, fill=Location))+
+   facet_grid(.~name, scales="free_y")+
+   stat_summary(geom="bar", fun="mean")+
+   scale_fill_manual(values=c("seagreen3","cornflowerblue"))
+
+EnvdataAugust %>% 
+   group_by(Location) %>% 
+   summarise_all(c("mean" = mean, "sd" = sd))
+
+```
+# Gas incubation rates
+
+```{r plot}
+
+incubationdata %>% 
+   unite("Condition", Location, Treatment, remove=FALSE) %>% 
+   pivot_longer(c(N2_Rate.nmol_gWetWeight_hr, N2O_Rate.nmol_gWetWeight_hr)) %>% 
+   ggplot(aes(x=Location, y=value, fill=Condition)) +
+   facet_grid(name~IncubationTemperature, scales="free_y") +
+   stat_summary(geom="bar", fun.y="mean", position="dodge")+
+   stat_summary(geom="errorbar", fun.data="mean_sdl", position="dodge", color="black")+
+   geom_hline(aes(yintercept=0))+
+   scale_fill_manual(values=c("lightgreen","darkgreen","lightblue","darkblue"))
+
+
+incubationdata %>% 
+   unite("Condition", Location, Treatment, remove=FALSE) %>% 
+   ggplot(aes(x=Location, y=N2_Rate.nmol_gWetWeight_hr, fill=Condition)) +
+   facet_grid(.~IncubationTemperature, scales="free_y") +
+   stat_summary(geom="bar", fun.y="mean", position="dodge")+
+   stat_summary(geom="errorbar", fun.data="mean_sdl", position="dodge", color="black")+
+   geom_hline(aes(yintercept=0))+
+   ggtitle("Dentrification (N2)")+
+  scale_fill_manual(values=c("lightgreen","darkgreen","lightblue","darkblue"))
+
+
+incubationdata %>% 
+   unite("Condition", Location, Treatment, remove=FALSE) %>% 
+   ggplot(aes(x=Condition, y=N2O_Rate.nmol_gWetWeight_hr, fill=Condition)) +
+   facet_grid(.~IncubationTemperature, scales="free_y") +
+   stat_summary(geom="bar", fun.y="mean")+
+   stat_summary(geom="errorbar", fun.data="mean_sdl", color="grey60", width=0.2)+
+   geom_point(shape=22)+
+   stat_compare_means(comparisons=c("Northern_Ambient", "Northern_Enriched"))+
+   geom_hline(aes(yintercept=0))+
+   labs(x=NULL, y="N2O production rate (nmol per g wet weight per hour)", title = "Nitrous Oxide (N2O)") +
+   scale_fill_manual(values=c("lightgreen","darkgreen","lightblue","darkblue"))
+
+```
+
+
+
+```{r stats}
+
+compare_means(data=incubationdata,
+               c(N2_Rate.nmol_gWetWeight_hr,N2O_Rate.nmol_gWetWeight_hr)~Treatment,
+               group.by = "Location")
+
+compare_means(data=incubationdata,
+               c(N2_Rate.nmol_gWetWeight_hr,N2O_Rate.nmol_gWetWeight_hr)~IncubationTemperature,
+               group.by = c("Location", "Treatment"))
+
+aovN2<- aov(data=incubationdata, N2_Rate.nmol_gWetWeight_hr~Location*Treatment*IncubationTemperature)
+ggqqplot(residuals(aovN2))
+rstatix::shapiro_test(residuals(aovN2))
+# In the QQ plot, as all the points fall approximately along the reference line, we can assume normality. This conclusion is supported by the Shapiro-Wilk test. The p-value is not significant (p = 0.603), so we can assume normality.
+summary(aovN2)
+
+aovN2O<- aov(data=incubationdata, N2O_Rate.nmol_gWetWeight_hr~Location*Treatment*IncubationTemperature)
+summary(aovN2O)
+ggqqplot(residuals(aovN2O))
+rstatix::shapiro_test(residuals(aovN2O))
+
+
+```
+
+# In Situ DIN measurements
+
+```{r DIN}
+
+DINdataAugust %>% 
+   group_by(Location, Treatment) %>% 
+   summarise(NH4mean = mean(NH4.uM, na.rm = TRUE),
+                NH4sd = sd(NH4.uM, na.rm = TRUE),
+                NO3mean = mean(NO3.uM),
+                NO3sd = sd(NO3.uM),
+                NO2mean = mean(NO2.uM),
+                NO2sd = sd(NO2.uM))
+
+DINdataAugust %>% 
+   unite("Condition", Location, Treatment, remove=FALSE) %>% 
+   pivot_longer(NH4.uM:NO2.uM) %>% 
+   ggplot(aes(x=Location, y=value, fill=Condition)) +
+   facet_wrap(Tide~name, scales="free_y") +
+   stat_summary(geom="bar", fun.y="mean", position=position_dodge())+
+   stat_summary(geom="errorbar", fun.data="mean_sdl", color="grey60", 
+                position=position_dodge(width=0.9), width=0.2)+
+   geom_point(shape=22, position=position_dodge(width=0.9))+
+   stat_compare_means(comparisons=c("Northern_Ambient", "Northern_Enriched"))+
+   geom_hline(aes(yintercept=0))+
+   labs(x=NULL, y="N2O production rate (nmol per g wet weight per hour)", title = "Nitrous Oxide (N2O)") +
+   scale_fill_manual(values=c("lightgreen","darkgreen","lightblue","darkblue"))+
+   theme(legend.position = "right")
+
+
+DINdataAugust %>% 
+   unite("Condition", Location, Treatment, remove=FALSE) %>% 
+   pivot_longer(NH4.uM:NO2.uM) %>% 
+   ggplot(aes(x=Location, y=value, fill=Condition)) +
+   facet_wrap(.~name, scales="free_y") +
+   geom_boxplot()+
+   geom_point(shape=22, position=position_dodge(width=0.9))+
+   stat_compare_means(comparisons=c("Northern_Ambient", "Northern_Enriched"))+
+   geom_hline(aes(yintercept=0))+
+   labs(x=NULL, y="in Situ gas concentration (µM)") +
+   scale_fill_manual(values=c("lightgreen","darkgreen","lightblue","darkblue"))+
+   theme(legend.position = "right")
+   
+
+```
+
+
+
+
+# Session Info
+
+```{r session}
+
+sessionInfo()
+
+```

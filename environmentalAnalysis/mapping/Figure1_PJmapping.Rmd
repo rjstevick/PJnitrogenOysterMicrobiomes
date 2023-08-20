@@ -1,0 +1,75 @@
+---
+title: "Map of Point Judith field sites"
+author: "Rebecca Stevick"
+output:
+  html_document:
+    toc: true
+    keep_md: TRUE
+    theme: "cerulean"
+---
+
+## Load libraries
+
+```{r setup, warning=FALSE, message=FALSE}
+
+library(sf)
+library(tidyverse)
+library(ggspatial)
+
+knitr::opts_chunk$set(warning=FALSE,message=FALSE)
+
+```
+
+## Import data
+
+```{r import}
+
+
+crs_use <- "+proj=laea +lat_0=30 +lon_0=-95"
+
+sitedata <- data.frame(Lat = c("41.385","41.42"),
+                   Long = c("-71.505","-71.50"),
+                   Station = c("BHC","BC"),
+                   Location = c("Southern","Northern")) %>% 
+  st_as_sf(coords = c("Long", "Lat"), crs = 4326) %>% 
+  st_transform(crs = crs_use)
+
+mapdata <- st_read("NarrBayMaps/NY137F01/historicl1.shp", quiet = TRUE) %>% 
+   filter(CLASS=="SHORELINE")
+
+```
+
+------------------------------------------------------------------------
+
+
+# Plotting
+
+```{r plot2, fig.width=5.5, fig.height=5}
+
+ggplot() + 
+   geom_sf(data=mapdata, color="grey20") +
+   geom_sf(data=sitedata, size=7, shape=21, color="white", 
+           fill=c("cornflowerblue","seagreen3"))+
+   coord_sf(xlim = c(-71.545,-71.44), ylim = c(41.355,41.435), expand = FALSE) + 
+   labs(x=NULL, y=NULL) +
+   theme(panel.grid = element_blank(), axis.line = element_line(),
+         panel.background = element_blank(),
+         axis.text = element_text(color="black"),
+         plot.background = element_blank())+
+   annotation_north_arrow(location = "bl", which_north = TRUE, pad_y = unit(0.3, "in"),
+                          pad_x = unit(0.75, "in"), style = north_arrow_fancy_orienteering)+
+   annotation_scale(location = "bl", pad_x = unit(0.5, "in"), pad_y = unit(0.2, "in"), width_hint = 0.3)
+
+ggsave("PointJudithMap.png", width=6, height=5, bg="transparent")
+ggsave("PointJudithMap.svg", width=6, height=5)
+
+```
+
+
+# Session Info
+
+```{r session}
+
+sessionInfo()
+
+```

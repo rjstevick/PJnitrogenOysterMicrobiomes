@@ -1,6 +1,6 @@
 ---
 title: "Point Judith environmental data"
-author: "Rebecca Stevick"
+author: "Rebecca Stevick, data collected by Ashley Hamilton"
 output:
   html_document:
     toc: true
@@ -14,6 +14,8 @@ output:
 
 library(tidyverse)
 library(ggpubr)
+library(ggtext)
+library(patchwork)
 
 knitr::opts_chunk$set(warning=FALSE,message=FALSE)
 
@@ -69,7 +71,7 @@ EnvdataAugust <- full_join(NorthernEnvdataAugust, SouthernEnvdataAugust)
 
 ## Plot in situ env param over time
 
-```{r plot}
+```{r plotinsitu, fig.height=10}
 
 EnvdataAugust %>% pivot_longer(Temp_C:ODO_mg.L) %>% 
    ggplot(aes(x=TimeStamp, y=value, color=Location))+
@@ -82,7 +84,7 @@ EnvdataAugust %>% pivot_longer(Temp_C:ODO_mg.L) %>%
 
 ## Averages
 
-```{r plot}
+```{r plotavgenv}
 
 EnvdataAugust %>% pivot_longer(Temp_C:ODO_mg.L) %>% 
    ggplot(aes(x=Location, y=value, fill=Location))+
@@ -92,12 +94,13 @@ EnvdataAugust %>% pivot_longer(Temp_C:ODO_mg.L) %>%
 
 EnvdataAugust %>% 
    group_by(Location) %>% 
-   summarise_all(c("mean" = mean, "sd" = sd))
+   summarise_all(c("mean" = mean, "sd" = sd)) %>% 
+   gt::gt()
 
 ```
 # Gas incubation rates
 
-```{r plot}
+```{r gasrateplot, fig.height=8, fig.width=8}
 
 incubationdata %>% 
    unite("Condition", Location, Treatment, remove=FALSE) %>% 
@@ -109,29 +112,47 @@ incubationdata %>%
    geom_hline(aes(yintercept=0))+
    scale_fill_manual(values=c("lightgreen","darkgreen","lightblue","darkblue"))
 
-
-incubationdata %>% 
+# only denitrification
+n2plot <- incubationdata %>% 
    unite("Condition", Location, Treatment, remove=FALSE) %>% 
+   mutate(IncubationTemperature=factor(IncubationTemperature, labels=c("18˚C","24˚C")),
+          Condition=factor(Condition, labels=c("Northern Ambient","Northern Enriched",
+                                               "Southern Ambient","Southern Enriched"))) %>% 
    ggplot(aes(x=Location, y=N2_Rate.nmol_gWetWeight_hr, fill=Condition)) +
    facet_grid(.~IncubationTemperature, scales="free_y") +
-   stat_summary(geom="bar", fun.y="mean", position="dodge")+
-   stat_summary(geom="errorbar", fun.data="mean_sdl", position="dodge", color="black")+
+   stat_summary(geom="bar", fun.y="mean", position=position_dodge(width=1))+
+   stat_summary(geom="errorbar", fun.data="mean_sdl", color="grey60", width=0.2, position=position_dodge(width=1))+
+   geom_point(shape=22, position=position_dodge(width=1), show.legend = FALSE)+
    geom_hline(aes(yintercept=0))+
-   ggtitle("Dentrification (N2)")+
-  scale_fill_manual(values=c("lightgreen","darkgreen","lightblue","darkblue"))
+   labs(x=NULL, y="N<sub>2</sub> production rate <br>(nmol per g wet weight per hour)", title = "Denitrification (N<sub>2</sub>)") +
+   scale_fill_manual(values=c("lightgreen","darkgreen","lightblue","darkblue"))+
+   theme(axis.title.y=element_markdown(size=15), legend.position = "right",
+         legend.text=element_markdown(size=15), strip.background = element_rect(color="transparent", fill="grey90"),
+         plot.title = element_markdown(size=18))
 
-
-incubationdata %>% 
+# nitrous oxide
+n2oplot <- incubationdata %>% 
    unite("Condition", Location, Treatment, remove=FALSE) %>% 
-   ggplot(aes(x=Condition, y=N2O_Rate.nmol_gWetWeight_hr, fill=Condition)) +
+   mutate(IncubationTemperature=factor(IncubationTemperature, labels=c("18˚C","24˚C")),
+          Condition=factor(Condition, labels=c("Northern Ambient","Northern Enriched",
+                                               "Southern Ambient","Southern Enriched"))) %>% 
+   ggplot(aes(x=Location, y=N2O_Rate.nmol_gWetWeight_hr, fill=Condition)) +
    facet_grid(.~IncubationTemperature, scales="free_y") +
-   stat_summary(geom="bar", fun.y="mean")+
-   stat_summary(geom="errorbar", fun.data="mean_sdl", color="grey60", width=0.2)+
-   geom_point(shape=22)+
-   stat_compare_means(comparisons=c("Northern_Ambient", "Northern_Enriched"))+
+   stat_summary(geom="bar", fun.y="mean", position=position_dodge(width=1))+
+   stat_summary(geom="errorbar", fun.data="mean_sdl", color="grey60", width=0.2, position=position_dodge(width=1))+
+   geom_point(shape=22, position=position_dodge(width=1), show.legend = FALSE)+
    geom_hline(aes(yintercept=0))+
-   labs(x=NULL, y="N2O production rate (nmol per g wet weight per hour)", title = "Nitrous Oxide (N2O)") +
-   scale_fill_manual(values=c("lightgreen","darkgreen","lightblue","darkblue"))
+   labs(x=NULL, y="N<sub>2</sub>O production rate <br>(nmol per g wet weight per hour)", title = "Nitrous Oxide (N<sub>2</sub>O)") +
+   scale_fill_manual(values=c("lightgreen","darkgreen","lightblue","darkblue"))+
+   theme(axis.title.y=element_markdown(size=15), legend.position = "right",
+         legend.text=element_markdown(size=15), strip.background = element_rect(color="transparent", fill="grey90"),
+         plot.title = element_markdown(size=18))
+
+(n2plot/n2oplot)+
+   plot_annotation(tag_levels = "A") + 
+   plot_layout(guides = "collect") & theme(legend.position = "right")
+
+ggsave("GasRates.png", width = 9, height=7)
 
 ```
 

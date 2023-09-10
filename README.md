@@ -17,16 +17,21 @@ Stevick, R. J. (2019). Oyster-Associated Microbial Community Dynamics (Doctoral 
 
 ## [EnvironmentalAnalysis](/EnvironmentalAnalysis)
 Envrionmental monitoring data and gas measurements - by Ashley Hamilton
+- mapping
+
 
 
 ## [16SampliconAnalysis](/16SampliconAnalysis)
 QIIME2 analysis of the 16S rRNA amplicon data
-- scripts
-- QIIME2_output
-- figures
 - metadata
+- scripts
+- qiime2output
+- figures
+
 
 ## [MetatranscriptomeAnalysis](/MetatranscriptomeAnalysis)
 Functional analysis of the metatranscriptomic data
+- metadata
 - scripts
--
+- output
+- figures
